@@ -1,0 +1,5 @@
+node_modules/
+.edge/
+docs/
+tests/preview_bundle.js
+*.log

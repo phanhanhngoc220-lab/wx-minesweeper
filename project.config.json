@@ -1,0 +1,14 @@
+{
+  "appid": "touristappid",
+  "projectname": "wx-minesweeper",
+  "compileType": "game",
+  "libVersion": "latest",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": false,
+    "urlCheck": false,
+    "postcss": false
+  },
+  "condition": {}
+}

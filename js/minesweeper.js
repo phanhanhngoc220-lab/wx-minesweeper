@@ -40,6 +40,7 @@ class Minesweeper {
         this.pressTimer = null;
         this.pressCell = -1;
         this.longFired = false;
+        this.swipeFlagged = false;
         this.pressStart = 0;
 
         this.zoom = 1;
@@ -247,19 +248,9 @@ class Minesweeper {
         this.downX = p.x; this.downY = p.y;
         this.lastX = p.x; this.lastY = p.y;
         this.dragging = false;
+        this.swipeFlagged = false;
         this.longFired = false;
-        if (this.status !== "playing") { this.pressCell = -1; return; }
-        this.pressCell = this.idxAt(p.x, p.y);
-        if (this.pressCell >= 0) {
-            const idx = this.pressCell;
-            this.pressTimer = setTimeout(() => {
-                this.pressTimer = null;
-                if (this.status === "playing" && !this.dragging) {
-                    this.longFired = true;
-                    this.toggleFlag(idx);
-                }
-            }, 380);
-        }
+        this.pressCell = this.status === "playing" ? this.idxAt(p.x, p.y) : -1;
     }
 
     onTouchMove(e) {
@@ -271,9 +262,23 @@ class Minesweeper {
         const p = this._pt(e);
         if (p.x < 0) return;
         const dx = p.x - this.lastX, dy = p.y - this.lastY;
-        if (!this.dragging && Math.hypot(p.x - this.downX, p.y - this.downY) > 7) {
+        const totalX = p.x - this.downX;
+        const totalY = p.y - this.downY;
+        const dist = Math.sqrt(totalX * totalX + totalY * totalY);
+
+        // 下滑插旗：短距离、以竖直向下为主，且起点是未翻开的格子
+        if (!this.swipeFlagged && !this.dragging && this.pressCell >= 0 &&
+            totalY > 20 && totalY > Math.abs(totalX) * 1.2 && dist < 52 &&
+            !this.revealed[this.pressCell]) {
+            this.swipeFlagged = true;
+            this.toggleFlag(this.pressCell);
+            this.lastX = p.x;
+            this.lastY = p.y;
+            return;
+        }
+
+        if (!this.dragging && dist > 7) {
             this.dragging = true;
-            if (this.pressTimer) { clearTimeout(this.pressTimer); this.pressTimer = null; }
         }
         if (this.dragging && this.zoom > 1) {
             this.panX += dx;
@@ -290,9 +295,8 @@ class Minesweeper {
             this.pinch = null;
             return;
         }
-        if (this.pressTimer) { clearTimeout(this.pressTimer); this.pressTimer = null; }
+        if (this.swipeFlagged) { this.swipeFlagged = false; this.dragging = false; return; }
         if (this.dragging) { this.dragging = false; return; }
-        if (this.longFired) { this.longFired = false; return; }
         if (this.status === "generating") return;
 
         const p = this._pt(e, y);
@@ -304,7 +308,7 @@ class Minesweeper {
 
         if (this.status === "won" || this.status === "lost") {
             const b = this.buttons;
-            if (b.again && UI.hit(b.again, x, yy)) { this.reset(); return; }
+            if (b.again && UI.hit(b.again, x, yy)) { this.restart(); return; }
             if (b.lobby && UI.hit(b.lobby, x, yy)) { this.app.setScene("lobby"); return; }
             if (this.status === "lost" && b.revive && UI.hit(b.revive, x, yy)) {
                 this.tryRevive();
@@ -334,6 +338,11 @@ class Minesweeper {
 
         if (this.revealed[idx]) this.chord(idx);
         else this.revealCell(idx);
+    }
+
+    restart() {
+        this.reset();
+        this.startGeneration((this.rows * this.cols) >> 1);
     }
 
     flood(start) {
@@ -529,7 +538,7 @@ class Minesweeper {
         if (this.status === "playing" || this.status === "ready" || this.status === "generating") {
             UI.button(ctx, this.hintRect, "提示", { size: 15 });
             UI.button(ctx, this.resetRect, "重开", { size: 15 });
-            UI.text(ctx, "长按插旗 · 双指缩放 · 双击复位", W / 2, H - 76, 12, C.muted, "center");
+            UI.text(ctx, "下滑插旗 · 双指缩放 · 双击复位", W / 2, H - 76, 12, C.muted, "center");
         }
 
         // 状态浮层

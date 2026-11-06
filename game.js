@@ -48,6 +48,7 @@ app.startGame = function (diff) {
 };
 
 app.setScene = function (scene) {
+    if (scene === "lobby") scene = new Lobby(app);
     if (app.scene && app.scene.exit) app.scene.exit();
     app.scene = scene;
     if (scene.enter) scene.enter();

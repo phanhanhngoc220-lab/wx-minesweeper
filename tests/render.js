@@ -97,6 +97,22 @@ setTimeout(() => {
     game.draw(ctx, W, H);
     console.log("✓ 双击复位（resetZoom）");
 
+    // 下滑插旗
+    let target = -1;
+    for (let i = 0; i < game.total; i++) {
+        if (!game.revealed[i] && !game.flagged[i]) { target = i; break; }
+    }
+    const tr = Math.floor(target / game.cols), tc = target % game.cols;
+    const tx = game.boardRect.x + tc * (game.cell + game.gap) + game.cell / 2;
+    const ty = game.boardRect.y + tr * (game.cell + game.gap) + game.cell / 2;
+    const flagsBefore = game.flags;
+    game.onTouchStart(tx, ty);
+    game.onTouchMove({ touches: [{ clientX: tx, clientY: ty + 30 }] });
+    if (game.flags !== flagsBefore + 1) throw new Error("下滑插旗失败 flags=" + game.flags);
+    game.onTouchEnd(tx, ty + 30);
+    game.draw(ctx, W, H);
+    console.log("✓ 下滑插旗");
+
     // 模拟踩雷：直接调用 lose 绘制结算
     game.lose(0);
     game.draw(ctx, W, H);

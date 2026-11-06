@@ -113,6 +113,22 @@ setTimeout(() => {
     game.draw(ctx, W, H);
     console.log("✓ 下滑插旗");
 
+    // 快速下滑（一次位移 80px），验证不会因为跨度大而漏判
+    let target2 = -1;
+    for (let i = 0; i < game.total; i++) {
+        if (!game.revealed[i] && !game.flagged[i]) { target2 = i; break; }
+    }
+    const tr2 = Math.floor(target2 / game.cols), tc2 = target2 % game.cols;
+    const tx2 = game.boardRect.x + tc2 * (game.cell + game.gap) + game.cell / 2;
+    const ty2 = game.boardRect.y + tr2 * (game.cell + game.gap) + game.cell / 2;
+    const flags2 = game.flags;
+    game.onTouchStart(tx2, ty2);
+    game.onTouchMove({ touches: [{ clientX: tx2 + 6, clientY: ty2 + 80 }] });
+    if (game.flags !== flags2 + 1) throw new Error("快速下滑插旗失败 flags=" + game.flags);
+    game.onTouchEnd(tx2 + 6, ty2 + 80);
+    game.draw(ctx, W, H);
+    console.log("✓ 快速下滑插旗");
+
     // 模拟踩雷：直接调用 lose 绘制结算
     game.lose(0);
     game.draw(ctx, W, H);

@@ -266,9 +266,9 @@ class Minesweeper {
         const totalY = p.y - this.downY;
         const dist = Math.sqrt(totalX * totalX + totalY * totalY);
 
-        // 下滑插旗：短距离、以竖直向下为主，且起点是未翻开的格子
+        // 下滑插旗：以竖直向下为主，且起点是未翻开的格子
         if (!this.swipeFlagged && !this.dragging && this.pressCell >= 0 &&
-            totalY > 20 && totalY > Math.abs(totalX) * 1.2 && dist < 52 &&
+            totalY > 14 && totalY > Math.abs(totalX) * 1.3 && dist < 130 &&
             !this.revealed[this.pressCell]) {
             this.swipeFlagged = true;
             this.toggleFlag(this.pressCell);
@@ -296,6 +296,19 @@ class Minesweeper {
             return;
         }
         if (this.swipeFlagged) { this.swipeFlagged = false; this.dragging = false; return; }
+
+        // 兜底：1× 时快速下滑可能一次位移就超过阈值，在抬手时再判定一次
+        if (this.zoom <= 1.01 && this.pressCell >= 0 && !this.revealed[this.pressCell]) {
+            const pend = this._pt(e, y);
+            const tdx = pend.x - this.downX;
+            const tdy = pend.y - this.downY;
+            if (tdy > 24 && tdy > Math.abs(tdx) * 1.3) {
+                this.dragging = false;
+                this.toggleFlag(this.pressCell);
+                return;
+            }
+        }
+
         if (this.dragging) { this.dragging = false; return; }
         if (this.status === "generating") return;
 

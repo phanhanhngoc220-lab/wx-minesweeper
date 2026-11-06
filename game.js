@@ -5,14 +5,18 @@ const UI = require("./js/ui");
 
 const canvas = wx.createCanvas();
 const ctx = canvas.getContext("2d");
-const sys = wx.getSystemInfoSync();
-const W = sys.windowWidth;
-const H = sys.windowHeight;
+let sys = wx.getSystemInfoSync();
+let W = sys.windowWidth;
+let H = sys.windowHeight;
 const dpr = Math.min(sys.pixelRatio || 2, 3);
 
-canvas.width = Math.floor(W * dpr);
-canvas.height = Math.floor(H * dpr);
-ctx.scale(dpr, dpr);
+function fitCanvas() {
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    ctx.scale(dpr, dpr);
+}
+
+fitCanvas();
 
 const app = {
     W,
@@ -24,9 +28,54 @@ const app = {
     toastUntil: 0
 };
 
+/** 横竖屏切换 / 窗口尺寸变化时重排 */
+function handleResize() {
+    try {
+        sys = wx.getSystemInfoSync();
+        W = sys.windowWidth;
+        H = sys.windowHeight;
+        fitCanvas();
+        app.W = W;
+        app.H = H;
+        if (app.scene) {
+            if (app.scene.layout) app.scene.layout(W, H);
+            else if (app.scene.enter) app.scene.enter();
+        }
+    } catch (e) {
+        // 老版本基础库没有 resize 事件时忽略
+    }
+}
+
+if (wx.onWindowResize) {
+    wx.onWindowResize(handleResize);
+}
+if (wx.onDeviceOrientationChange) {
+    wx.onDeviceOrientationChange(function () { setTimeout(handleResize, 60); });
+}
+
 app.toast = function (msg) {
     app.toastText = msg;
     app.toastUntil = Date.now() + 1600;
+};
+
+/** 运行时切换横竖屏（基础库支持 wx.setDeviceOrientation 时） */
+app.toggleOrientation = function () {
+    const target = W > H ? "portrait" : "landscape";
+    if (!wx.setDeviceOrientation) {
+        app.toast("当前基础库不支持转屏");
+        return;
+    }
+    try {
+        wx.setDeviceOrientation({
+            value: target,
+            fail: function () { app.toast("转屏失败，请检查基础库版本"); }
+        });
+    } catch (e) {
+        app.toast("转屏失败");
+        return;
+    }
+    setTimeout(handleResize, 300);
+    setTimeout(handleResize, 800);
 };
 
 app.getBest = function (key) {

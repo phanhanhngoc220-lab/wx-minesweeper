@@ -68,11 +68,14 @@ class Minesweeper {
     }
 
     layout(W, H) {
+        const landscape = W > H;
+        this.landscape = landscape;
         const pad = 14;
+        const top = landscape ? 62 : 96;
+        const footerH = landscape ? 70 : 118;
+        const bottom = H - footerH;
         const maxBoardW = W - pad * 2;
-        const top = 96;
-        const bottom = 150;
-        const maxBoardH = H - top - bottom;
+        const maxBoardH = bottom - top - 12;
         const gap = this.cols > 20 ? 1 : 2;
         const cellW = Math.floor((maxBoardW - (this.cols - 1) * gap) / this.cols);
         const cellH = Math.floor((maxBoardH - (this.rows - 1) * gap) / this.rows);
@@ -87,9 +90,17 @@ class Minesweeper {
             w: bw,
             h: bh
         };
-        this.backRect = { x: 16, y: 40, w: 74, h: 36 };
-        this.hintRect = { x: W - 176, y: H - 96, w: 76, h: 40 };
-        this.resetRect = { x: W - 92, y: H - 96, w: 76, h: 40 };
+        this.clipTop = top - 6;
+        this.clipBottom = bottom - 2;
+        this.backRect = { x: 14, y: landscape ? 12 : 40, w: 70, h: 34 };
+        this.orientRect = { x: W - 78, y: landscape ? 12 : 40, w: 64, h: 34 };
+        const btnW = 74, btnH = 34;
+        const btnY = H - (landscape ? 56 : 106);
+        this.hintRect = { x: W - 14 - btnW * 2 - 8, y: btnY, w: btnW, h: btnH };
+        this.resetRect = { x: W - 14 - btnW, y: btnY, w: btnW, h: btnH };
+        this.footerTextY = landscape ? H - 20 : H - 46;
+        this.titleY = landscape ? 30 : 58;
+        this.statY = landscape ? 50 : 84;
     }
 
     boardReady() {
@@ -196,8 +207,8 @@ class Minesweeper {
         const z = this.zoom;
         const bw = b.w * z, bh = b.h * z;
         const pad = 8;
-        const top = 96;
-        const bottom = H - 112;
+        const top = this.clipTop;
+        const bottom = this.clipBottom;
         if (bw <= W - pad * 2) {
             this.panX = (W - bw) / 2 - b.x * z;
         } else {
@@ -268,10 +279,11 @@ class Minesweeper {
 
         // 下滑插旗：竖直向下超过约一个格子就立刻插旗（不限制滑过多少格）
         const swipeThreshold = Math.max(12, this.cell * 0.7);
-        if (!this.swipeFlagged && !this.dragging && this.pressCell >= 0 &&
+        if (!this.swipeFlagged && this.pressCell >= 0 &&
             totalY > swipeThreshold && totalY > Math.abs(totalX) * 1.3 &&
             !this.revealed[this.pressCell]) {
             this.swipeFlagged = true;
+            this.dragging = false;
             this.toggleFlag(this.pressCell);
             this.lastX = p.x;
             this.lastY = p.y;
@@ -317,6 +329,7 @@ class Minesweeper {
         const x = p.x, yy = p.y;
 
         if (UI.hit(this.backRect, x, yy)) { this.app.setScene("lobby"); return; }
+        if (UI.hit(this.orientRect, x, yy)) { if (this.app.toggleOrientation) this.app.toggleOrientation(); return; }
         if (this.status === "playing" && UI.hit(this.hintRect, x, yy)) { this.showHint(); return; }
         if (UI.hit(this.resetRect, x, yy)) { this.reset(); return; }
 
@@ -510,16 +523,17 @@ class Minesweeper {
         // 顶栏
         UI.fillRound(ctx, this.backRect.x, this.backRect.y, this.backRect.w, this.backRect.h, 10, "rgba(255,255,255,0.06)");
         UI.text(ctx, "‹ 大厅", this.backRect.x + this.backRect.w / 2, this.backRect.y + this.backRect.h / 2, 14, C.text, "center");
+        UI.button(ctx, this.orientRect, this.landscape ? "竖屏" : "横屏", { size: 12 });
 
-        UI.text(ctx, this.diff.name + " · " + this.cols + "×" + this.rows, W / 2, 58, 18, C.text, "center", "bold");
+        UI.text(ctx, this.diff.name + " · " + this.cols + "×" + this.rows, W / 2, this.titleY, 18, C.text, "center", "bold");
         UI.text(ctx, "🚩 " + (this.mineCount - this.flags) + "    ⏱ " + UI.formatTime(this.currentElapsed()),
-            W / 2, 84, 14, C.muted, "center");
+            W / 2, this.statY, 14, C.muted, "center");
 
         // 棋盘（支持双指缩放 / 拖动）
         const b = this.boardRect;
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, 92, W, H - 92 - 104);
+        ctx.rect(0, this.clipTop, W, this.clipBottom - this.clipTop);
         ctx.clip();
         ctx.translate(this.panX, this.panY);
         ctx.scale(this.zoom, this.zoom);
@@ -550,9 +564,11 @@ class Minesweeper {
 
         // 底栏按钮
         if (this.status === "playing" || this.status === "ready" || this.status === "generating") {
-            UI.button(ctx, this.hintRect, "提示", { size: 15 });
-            UI.button(ctx, this.resetRect, "重开", { size: 15 });
-            UI.text(ctx, "下滑插旗 · 双指缩放 · 双击复位", W / 2, H - 76, 12, C.muted, "center");
+            UI.button(ctx, this.hintRect, "提示", { size: this.landscape ? 14 : 15 });
+            UI.button(ctx, this.resetRect, "重开", { size: this.landscape ? 14 : 15 });
+            UI.text(ctx, "下滑插旗 · 双指缩放 · 双击复位",
+                this.landscape ? 16 : W / 2, this.footerTextY, 11, C.muted,
+                this.landscape ? "left" : "center");
         }
 
         // 状态浮层
@@ -561,8 +577,9 @@ class Minesweeper {
         if (this.status === "lost") this.drawResult(ctx, W, H, false);
 
         if (this.zoom > 1.01) {
-            UI.fillRound(ctx, 12, H - 150, 112, 26, 13, "rgba(10,16,32,0.85)");
-            UI.text(ctx, "×" + this.zoom.toFixed(1) + "  双击复位", 68, H - 137, 11, C.muted, "center");
+            const by = this.landscape ? H - 92 : H - 150;
+            UI.fillRound(ctx, 12, by, 112, 26, 13, "rgba(10,16,32,0.85)");
+            UI.text(ctx, "×" + this.zoom.toFixed(1) + "  双击复位", 68, by + 13, 11, C.muted, "center");
         }
     }
 

@@ -22,10 +22,12 @@ class Lobby {
         this.chips = [];
         const pad = 16;
         const gap = 8;
-        const cols = 3;
+        const landscape = W > H;
+        this.landscape = landscape;
+        const cols = landscape ? 5 : 3;
         const cw = (W - pad * 2 - gap * (cols - 1)) / cols;
-        const ch = 52;
-        const top = 196;
+        const ch = landscape ? 54 : 52;
+        const top = landscape ? 92 : 196;
         config.DIFFS.forEach((d, i) => {
             const r = Math.floor(i / cols), c = i % cols;
             this.chips.push({
@@ -36,13 +38,25 @@ class Lobby {
         const rows = Math.ceil(config.DIFFS.length / cols);
         const chipsBottom = top + rows * (ch + gap);
 
-        this.startRect = { x: pad, y: chipsBottom + 18, w: W - pad * 2, h: 54 };
+        this.orientRect = { x: W - 78, y: landscape ? 10 : 14, w: 64, h: 32 };
+        this.startRect = landscape
+            ? { x: pad, y: chipsBottom + 26, w: W - pad * 2, h: 46 }
+            : { x: pad, y: chipsBottom + 18, w: W - pad * 2, h: 54 };
 
-        this.cardsTop = this.startRect.y + this.startRect.h + 34;
-        this.cardRects = this.cards.map((c, i) => ({
-            card: c,
-            rect: { x: pad, y: this.cardsTop + i * 74, w: W - pad * 2, h: 64 }
-        }));
+        this.cardsTop = this.startRect.y + this.startRect.h + (landscape ? 16 : 34);
+        if (landscape) {
+            const cgap = 10;
+            const cw2 = (W - pad * 2 - cgap * 2) / 3;
+            this.cardRects = this.cards.map((c, i) => ({
+                card: c,
+                rect: { x: pad + i * (cw2 + cgap), y: this.cardsTop, w: cw2, h: Math.min(72, H - this.cardsTop - 10) }
+            }));
+        } else {
+            this.cardRects = this.cards.map((c, i) => ({
+                card: c,
+                rect: { x: pad, y: this.cardsTop + i * 74, w: W - pad * 2, h: 64 }
+            }));
+        }
     }
 
     onTouchStart() {}
@@ -56,6 +70,7 @@ class Lobby {
             x = t.clientX;
             yy = t.clientY;
         }
+        if (UI.hit(this.orientRect, x, yy)) { if (this.app.toggleOrientation) this.app.toggleOrientation(); return; }
         for (const chip of this.chips) {
             if (UI.hit(chip.rect, x, yy)) {
                 this.selected = chip.diff.key;
@@ -88,10 +103,12 @@ class Lobby {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, W, H);
 
-        UI.text(ctx, "🎮 " + config.APP_NAME, W / 2, 72, 26, C.text, "center", "bold");
-        UI.text(ctx, config.SUBTITLE, W / 2, 106, 13, C.muted, "center");
+        UI.text(ctx, "🎮 " + config.APP_NAME, W / 2, this.landscape ? 40 : 72, this.landscape ? 22 : 26, C.text, "center", "bold");
+        UI.text(ctx, config.SUBTITLE, W / 2, this.landscape ? 62 : 106, 13, C.muted, "center");
 
-        UI.text(ctx, "选择难度", 16, 160, 14, C.muted, "left");
+        UI.button(ctx, this.orientRect, this.landscape ? "竖屏" : "横屏", { size: 12 });
+
+        UI.text(ctx, "选择难度", 16, this.landscape ? 80 : 160, 14, C.muted, "left");
 
         for (const chip of this.chips) {
             const active = chip.diff.key === this.selected;
@@ -113,7 +130,7 @@ class Lobby {
 
         const best = this.app.getBest(this.selected);
         UI.text(ctx, best ? "最佳用时 " + UI.formatTime(best) : "还没有记录，来一局？",
-            W / 2, this.startRect.y - 14, 12, C.muted, "center");
+            W / 2, this.startRect.y - 12, 12, C.muted, "center");
 
         UI.button(ctx, this.startRect, "开始游戏", { primary: true, size: 18 });
 
@@ -130,7 +147,7 @@ class Lobby {
                 item.card.ready ? C.accent2 : C.muted, "right");
         }
 
-        UI.text(ctx, "无猜模式：生成前会验证整盘可纯逻辑通关", W / 2, H - 28, 11, "rgba(147,164,200,0.7)", "center");
+        UI.text(ctx, "无猜模式：生成前会验证整盘可纯逻辑通关", W / 2, H - (this.landscape ? 16 : 28), 11, "rgba(147,164,200,0.7)", "center");
     }
 }
 

@@ -5,6 +5,7 @@ const path = require("path");
 const Lobby = require(path.join(__dirname, "..", "js", "lobby.js"));
 const Minesweeper = require(path.join(__dirname, "..", "js", "minesweeper.js"));
 const config = require(path.join(__dirname, "..", "js", "config.js"));
+const core = require(path.join(__dirname, "..", "js", "core.js"));
 
 function fakeCtx() {
     const gradient = { addColorStop() {} };
@@ -153,5 +154,26 @@ setTimeout(() => {
     // 返回大厅
     game.onTouchEnd(game.backRect.x + 2, game.backRect.y + 2);
     console.log("✓ 返回大厅");
+
+    // 横屏布局：完整绘制一次，确认不越界、不重叠到按钮
+    const lw = 844, lh = 390;
+    const landApp = Object.assign({}, app, { W: lw, H: lh });
+    const land = new Minesweeper(landApp, config.DIFFS.find(d => d.key === "expert"));
+    land.layout(lw, lh);
+    const genL = core.createGenerator(land.rows, land.cols, land.mineCount, 100);
+    let rl;
+    do { rl = genL.step(500); } while (!rl.done);
+    land.applyBoard(rl.board, rl.nb);
+    land.draw(ctx, lw, lh);
+    if (!(land.boardRect.y >= land.clipTop)) throw new Error("横屏棋盘越界");
+    if (land.boardRect.y + land.boardRect.h > land.clipBottom) throw new Error("横屏棋盘压到底栏");
+    if (land.resetRect.y <= land.boardRect.y + land.boardRect.h) throw new Error("横屏按钮压住棋盘");
+    console.log("✓ 横屏布局绘制");
+
+    const landLobby = new Lobby(landApp);
+    landLobby.layout(lw, lh);
+    landLobby.draw(ctx, lw, lh);
+    console.log("✓ 横屏大厅绘制");
+
     console.log("渲染冒烟全部通过");
 }, 1800);

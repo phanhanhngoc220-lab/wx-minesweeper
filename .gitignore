@@ -3,3 +3,4 @@ node_modules/
 docs/
 tests/preview_bundle.js
 *.log
+project.private.config.json

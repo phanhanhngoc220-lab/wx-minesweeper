@@ -72,7 +72,7 @@ class Minesweeper {
         this.landscape = landscape;
         const pad = 14;
         const top = landscape ? 62 : 96;
-        const footerH = landscape ? 70 : 118;
+        const footerH = landscape ? 88 : 96;
         const bottom = H - footerH;
         const maxBoardW = W - pad * 2;
         const maxBoardH = bottom - top - 12;
@@ -93,12 +93,14 @@ class Minesweeper {
         this.clipTop = top - 6;
         this.clipBottom = bottom - 2;
         this.backRect = { x: 14, y: landscape ? 12 : 40, w: 70, h: 34 };
-        this.orientRect = { x: W - 78, y: landscape ? 12 : 40, w: 64, h: 34 };
-        const btnW = 74, btnH = 34;
-        const btnY = H - (landscape ? 56 : 106);
-        this.hintRect = { x: W - 14 - btnW * 2 - 8, y: btnY, w: btnW, h: btnH };
-        this.resetRect = { x: W - 14 - btnW, y: btnY, w: btnW, h: btnH };
-        this.footerTextY = landscape ? H - 20 : H - 46;
+        const btnW = 66, btnH = 34, btnGap = 8;
+        const btnY = this.boardRect.y + this.boardRect.h + 10;
+        const totalW = btnW * 3 + btnGap * 2;
+        const startX = (W - totalW) / 2;
+        this.orientRect = { x: startX, y: btnY, w: btnW, h: btnH };
+        this.hintRect = { x: startX + btnW + btnGap, y: btnY, w: btnW, h: btnH };
+        this.resetRect = { x: startX + (btnW + btnGap) * 2, y: btnY, w: btnW, h: btnH };
+        this.footerTextY = btnY + btnH + 14;
         this.titleY = landscape ? 30 : 58;
         this.statY = landscape ? 50 : 84;
     }
@@ -523,8 +525,6 @@ class Minesweeper {
         // 顶栏
         UI.fillRound(ctx, this.backRect.x, this.backRect.y, this.backRect.w, this.backRect.h, 10, "rgba(255,255,255,0.06)");
         UI.text(ctx, "‹ 大厅", this.backRect.x + this.backRect.w / 2, this.backRect.y + this.backRect.h / 2, 14, C.text, "center");
-        UI.button(ctx, this.orientRect, this.landscape ? "竖屏" : "横屏", { size: 12 });
-
         UI.text(ctx, this.diff.name + " · " + this.cols + "×" + this.rows, W / 2, this.titleY, 18, C.text, "center", "bold");
         UI.text(ctx, "🚩 " + (this.mineCount - this.flags) + "    ⏱ " + UI.formatTime(this.currentElapsed()),
             W / 2, this.statY, 14, C.muted, "center");
@@ -564,11 +564,10 @@ class Minesweeper {
 
         // 底栏按钮
         if (this.status === "playing" || this.status === "ready" || this.status === "generating") {
-            UI.button(ctx, this.hintRect, "提示", { size: this.landscape ? 14 : 15 });
-            UI.button(ctx, this.resetRect, "重开", { size: this.landscape ? 14 : 15 });
-            UI.text(ctx, "下滑插旗 · 双指缩放 · 双击复位",
-                this.landscape ? 16 : W / 2, this.footerTextY, 11, C.muted,
-                this.landscape ? "left" : "center");
+            UI.button(ctx, this.orientRect, this.landscape ? "竖屏" : "横屏", { size: 13 });
+            UI.button(ctx, this.hintRect, "提示", { size: 13 });
+            UI.button(ctx, this.resetRect, "重开", { size: 13 });
+            UI.text(ctx, "下滑插旗 · 双指缩放 · 双击复位", W / 2, this.footerTextY, 11, C.muted, "center");
         }
 
         // 状态浮层

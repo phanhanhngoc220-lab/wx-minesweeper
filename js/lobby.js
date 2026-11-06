@@ -38,7 +38,7 @@ class Lobby {
         const rows = Math.ceil(config.DIFFS.length / cols);
         const chipsBottom = top + rows * (ch + gap);
 
-        this.orientRect = { x: W - 78, y: landscape ? 10 : 14, w: 64, h: 32 };
+        this.orientRect = { x: W - 78, y: landscape ? 60 : 150, w: 64, h: 30 };
         this.startRect = landscape
             ? { x: pad, y: chipsBottom + 26, w: W - pad * 2, h: 46 }
             : { x: pad, y: chipsBottom + 18, w: W - pad * 2, h: 54 };

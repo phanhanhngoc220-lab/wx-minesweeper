@@ -140,6 +140,16 @@ setTimeout(() => {
     game.draw(ctx, W, H);
     console.log("✓ 胜利浮层绘制");
 
+    // 再来一局：应回到全新空白棋盘
+    game.buttons.again = null;
+    game.restart();
+    if (game.status !== "ready" || game.board !== null) {
+        throw new Error("再来一局没有重置，status=" + game.status);
+    }
+    if (game.revealedCount !== 0 || game.flags !== 0) throw new Error("再来一局残留数据");
+    game.draw(ctx, W, H);
+    console.log("✓ 再来一局重置为空白棋盘");
+
     // 返回大厅
     game.onTouchEnd(game.backRect.x + 2, game.backRect.y + 2);
     console.log("✓ 返回大厅");

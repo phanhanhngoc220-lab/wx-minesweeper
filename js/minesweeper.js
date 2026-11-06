@@ -266,9 +266,10 @@ class Minesweeper {
         const totalY = p.y - this.downY;
         const dist = Math.sqrt(totalX * totalX + totalY * totalY);
 
-        // 下滑插旗：以竖直向下为主，且起点是未翻开的格子
+        // 下滑插旗：竖直向下超过约一个格子就立刻插旗（不限制滑过多少格）
+        const swipeThreshold = Math.max(12, this.cell * 0.7);
         if (!this.swipeFlagged && !this.dragging && this.pressCell >= 0 &&
-            totalY > 14 && totalY > Math.abs(totalX) * 1.3 && dist < 130 &&
+            totalY > swipeThreshold && totalY > Math.abs(totalX) * 1.3 &&
             !this.revealed[this.pressCell]) {
             this.swipeFlagged = true;
             this.toggleFlag(this.pressCell);
@@ -355,7 +356,7 @@ class Minesweeper {
 
     restart() {
         this.reset();
-        this.startGeneration((this.rows * this.cols) >> 1);
+        if (this.app.toast) this.app.toast("点击任意格子开始新的一局");
     }
 
     flood(start) {
